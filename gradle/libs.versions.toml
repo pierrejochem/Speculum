@@ -28,7 +28,7 @@ ktor-server-contentnegotiation = { module = "io.ktor:ktor-server-content-negotia
 ktor-server-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 ktor-server-statuspages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-calllogging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.34" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.37" }
 # OpenPGP (ed25519) detached-signature verification for the in-app updater.
 bouncycastle-pg = { module = "org.bouncycastle:bcpg-jdk18on", version = "1.84" }
 zxing-core = { module = "com.google.zxing:core", version = "3.5.4" }
