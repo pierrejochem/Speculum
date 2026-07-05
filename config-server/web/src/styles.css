@@ -156,24 +156,125 @@ code {
           mask: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
 
-.page { max-width: 880px; margin: 0 auto; padding: 30px 18px 96px; }
+.spacer { flex: 1; }
 
-header {
+/* ---- App shell (sidebar + content) --------------------------------------- */
+
+.shell {
+  display: grid;
+  grid-template-columns: 246px minmax(0, 1fr);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 26px 16px 18px;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent 220px);
+}
+
+.side-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 26px;
+  gap: 12px;
+  padding: 4px 8px 20px;
 }
-.spacer { flex: 1; }
+.side-lockup { display: grid; gap: 3px; min-width: 0; }
+.side-brand .wm { font-family: var(--serif); font-size: 20px; line-height: 1; letter-spacing: 0.5px; }
+.side-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.side-nav { display: flex; flex-direction: column; gap: 3px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font: 500 13px/1 var(--sans);
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
+}
+.nav-item:hover { color: var(--fg); background: rgba(255, 255, 255, 0.03); box-shadow: none; filter: none; }
+.nav-item .nav-label { flex: 1; }
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  rotate: 45deg;
+  border-radius: 1px;
+  flex: none;
+  border: 1px solid var(--faint);
+  background: transparent;
+  transition: background 0.16s, border-color 0.16s;
+}
+.nav-item.active {
+  color: var(--fg);
+  background: rgba(123, 97, 255, 0.10);
+  border-color: rgba(123, 97, 255, 0.24);
+}
+.nav-item.active .nav-dot { background: var(--grad); border-color: transparent; }
+.nav-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.nav-item.active .nav-badge { color: var(--fg); }
+
+.side-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+.side-ver { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--faint); }
+.side-foot .ghost { margin-left: auto; }
+
+/* ---- Main content -------------------------------------------------------- */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 36px 36px 0;
+}
+.main-head { margin-bottom: 22px; }
+.main-title { font-family: var(--serif); font-size: 26px; font-weight: 400; letter-spacing: 0.3px; }
+.main-sub { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+.main-body { flex: 1; }
 
 footer {
   position: sticky;
-  bottom: 0;
+  bottom: 16px;
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  margin-top: 8px;
+  margin: 18px 0 24px;
   background: rgba(12, 14, 18, 0.82);
   backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid var(--line);
@@ -202,19 +303,22 @@ footer {
 }
 .card > h2 { margin-bottom: 16px; }
 
-/* staggered load reveal */
-.card, header, footer { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-header { animation-delay: 0.02s; }
+/* Load / section-switch reveal. The main body remounts (React key) on each nav
+   change, so its cards re-run this animation — a soft cross-section transition. */
+.main-head { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.04s; }
+.card { animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .card:nth-of-type(1) { animation-delay: 0.06s; }
 .card:nth-of-type(2) { animation-delay: 0.12s; }
 .card:nth-of-type(3) { animation-delay: 0.18s; }
-footer { animation-delay: 0.22s; }
+.sidebar { animation: fade 0.5s ease both; }
+footer { animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.1s; }
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .card, header, footer { animation: none; }
+  .main-head, .card, .sidebar, footer { animation: none; }
 }
 
 /* ---- Forms --------------------------------------------------------------- */
@@ -304,6 +408,43 @@ button.small { padding: 6px 11px; font-size: 12px; }
 
 /* ---- Modules ------------------------------------------------------------- */
 
+/* Per-module tab strip — one tab per configured module, gradient underline on
+   the active one (echoes the card's top hairline seam). */
+.tabs {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  position: relative;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 0;
+  padding: 9px 14px 12px;
+  font: 500 13px/1 var(--sans);
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: color 0.16s;
+}
+.tab:hover { color: var(--fg); background: transparent; box-shadow: none; filter: none; }
+.tab::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--grad);
+  opacity: 0;
+  transition: opacity 0.16s;
+}
+.tab.active { color: var(--fg); }
+.tab.active::after { opacity: 1; }
+
 .module {
   position: relative;
   border: 1px solid var(--line-soft);
@@ -371,10 +512,55 @@ input, select, textarea { max-width: 100%; min-width: 0; }
 
 /* ---- Responsive (phones / tablets) --------------------------------------- */
 
-/* The admin is opened from phones on the LAN (http://<pi-ip>:8080). Below this
-   width, fixed-width fields and flex rows are stacked so nothing overflows. */
+/* Tablets / small laptops: the fixed sidebar collapses into a sticky top bar
+   laid out as two rows — brand + sign-out on the first, a full-width scrollable
+   section strip on the second — so nothing is cramped. Opened from LAN phones. */
+@media (max-width: 860px) {
+  /* minmax(0, 1fr) — a bare `1fr` is minmax(auto, 1fr) and refuses to shrink
+     below the top nav's content width, forcing horizontal page overflow. */
+  .shell { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: auto;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 0;
+    padding: 11px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    background: rgba(12, 14, 18, 0.85);
+    backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  /* Row 1: brand (with wordmark) on the left, sign-out pushed to the right. */
+  .side-brand { order: 1; padding: 0; }
+  .side-foot { order: 2; margin: 0 0 0 auto; padding-top: 0; border-top: none; }
+  .side-ver { display: none; }
+
+  /* Row 2: full-width horizontally scrollable section strip. */
+  .side-nav {
+    order: 3;
+    flex: 0 0 100%;
+    flex-direction: row;
+    gap: 5px;
+    min-width: 0;
+    margin-top: 11px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .side-nav::-webkit-scrollbar { display: none; }
+  .nav-item { white-space: nowrap; padding: 8px 13px; }
+  .nav-badge { display: none; }
+
+  .main { padding: 24px 20px 0; }
+  .main-title { font-size: 23px; }
+}
+
+/* Phones: stack fixed-width fields and flex rows so nothing overflows. */
 @media (max-width: 640px) {
-  .page { padding: 20px 12px 96px; }
   .card { padding: 18px 16px 20px; border-radius: 12px; }
 
   /* Fields stack full-width instead of sitting in a cramped flex row. */
@@ -395,21 +581,21 @@ input, select, textarea { max-width: 100%; min-width: 0; }
 
   .pw .row > label { min-width: 0; }
 
-  /* Sticky footer + header wrap rather than overflow. */
-  header { flex-wrap: wrap; gap: 10px; }
+  /* Sticky footer wraps rather than overflowing. */
   footer { flex-wrap: wrap; gap: 10px 14px; padding: 12px; }
   /* A flex spacer would force a blank wrapped row — drop it when stacked. */
   footer .spacer { display: none; }
   .card-head { flex-wrap: wrap; }
+
+  .main { padding: 20px 14px 0; }
 
   /* 16px text fields stop iOS Safari from auto-zooming on focus. */
   input, select { font-size: 16px; }
   textarea { font-size: 15px; }
 }
 
-/* Very narrow phones: drop the inline brand tag to save the title row. */
-@media (max-width: 380px) {
-  .brand .tag { display: none; }
+/* Very narrow phones: shrink the login wordmark so it never overflows. */
+@media (max-width: 460px) {
   .wordmark { font-size: 34px; }
 }
 

@@ -6,6 +6,8 @@ import { StoreCard } from "./StoreCard";
 import { UpdatesCard } from "./UpdatesCard";
 import { Mark } from "./Logo";
 
+type Section = "global" | "modules" | "store" | "updates" | "security";
+
 export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
   const [config, setConfig] = useState<MirrorConfig | null>(null);
   const [available, setAvailable] = useState<AvailableModule[]>([]);
@@ -15,6 +17,8 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [section, setSection] = useState<Section>("global");
+  const [moduleTab, setModuleTab] = useState(0);
 
   function reload() {
     Promise.all([api.getConfig(), api.getModules(), api.getIps(), api.getVersion()])
@@ -60,13 +64,17 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
   };
   const updateModule = (i: number, m: ModuleConfig) =>
     update({ modules: config.modules.map((x, j) => (j === i ? m : x)) });
-  const removeModule = (i: number) =>
+  const removeModule = (i: number) => {
     update({ modules: config.modules.filter((_, j) => j !== i) });
+    // Keep the selected tab in range after the list shrinks.
+    setModuleTab((t) => (t >= i && t > 0 ? t - 1 : t));
+  };
 
   function addModule(name: string) {
     const def = available.find((a) => a.name === name)?.defaultConfig;
     const mod: ModuleConfig = def ?? { module: name, position: "top_left", refreshInterval: 0, config: {} };
     update({ modules: [...config!.modules, { ...mod, config: { ...mod.config } }] });
+    setModuleTab(config!.modules.length); // focus the newly added module
   }
 
   async function save() {
@@ -87,93 +95,163 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
 
   const notAdded = available.filter((a) => !config.modules.some((m) => m.module === a.name));
 
+  const NAV: { id: Section; label: string; sub: string; badge?: number }[] = [
+    { id: "global", label: "Global", sub: "Language, time, and units applied across the mirror." },
+    { id: "modules", label: "Modules", sub: "Add, place, and configure what the mirror shows.", badge: config.modules.length },
+    { id: "store", label: "Store", sub: "Browse and install plugins to add new modules." },
+    { id: "updates", label: "Updates", sub: "Check for and install app updates." },
+    { id: "security", label: "Security", sub: "Change the admin password." },
+  ];
+  const current = NAV.find((n) => n.id === section)!;
+  // Clamp on render so a stale index (after a remove/reload) never reads out of
+  // bounds; -1 only when there are no modules, which the empty state handles.
+  const activeIdx = Math.min(moduleTab, config.modules.length - 1);
+
+  // Save only mutates the mirror config (Global + Modules). The footer stays
+  // visible on every section so unsaved edits can always be committed, but the
+  // save-related state only means anything for the config sections.
+  const showFooter = dirty || saving || !!status || !!error || section === "global" || section === "modules";
+
   return (
-    <div className="page">
-      <header>
-        <div className="brand">
-          <Mark size={34} />
-          <span className="wm">Specul<span className="wordmark-u">u</span>m</span>
-          <span className="tag">config</span>
-          {version && <span className="tag" title="Running app version">v{version}</span>}
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="side-brand">
+          <Mark size={30} />
+          <span className="side-lockup">
+            <span className="wm">Specul<span className="wordmark-u">u</span>m</span>
+            <span className="side-tag">config console</span>
+          </span>
         </div>
-        <span className="spacer" />
-        <button
-          className="ghost"
-          onClick={() => {
-            if (dirty && !confirm("You have unsaved changes. Sign out anyway?")) return;
-            onLogout();
-          }}
-        >
-          Sign out
-        </button>
-      </header>
 
-      <section className="card">
-        <h2>Global</h2>
-        <div className="row">
-          <label>Language
-            <input value={config.language} onChange={(e) => update({ language: e.target.value })} />
-          </label>
-          <label>Time format
-            <select value={config.timeFormat} onChange={(e) => update({ timeFormat: Number(e.target.value) })}>
-              <option value={24}>24h</option>
-              <option value={12}>12h</option>
-            </select>
-          </label>
-          <label>Units
-            <select value={config.units} onChange={(e) => update({ units: e.target.value })}>
-              <option value="metric">metric</option>
-              <option value="imperial">imperial</option>
-            </select>
-          </label>
+        <nav className="side-nav" aria-label="Settings sections">
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              className={"nav-item" + (n.id === section ? " active" : "")}
+              aria-current={n.id === section ? "page" : undefined}
+              onClick={() => setSection(n.id)}
+            >
+              <span className="nav-dot" aria-hidden="true" />
+              <span className="nav-label">{n.label}</span>
+              {n.badge != null && <span className="nav-badge">{n.badge}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="side-foot">
+          {version && <span className="side-ver" title="Running app version">v{version}</span>}
+          <button
+            className="ghost small"
+            onClick={() => {
+              if (dirty && !confirm("You have unsaved changes. Sign out anyway?")) return;
+              onLogout();
+            }}
+          >
+            Sign out
+          </button>
         </div>
-      </section>
+      </aside>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Modules ({config.modules.length})</h2>
-          {notAdded.length > 0 && (
-            <select value="" onChange={(e) => e.target.value && addModule(e.target.value)}>
-              <option value="">+ Add module…</option>
-              {notAdded.map((a) => <option key={a.name} value={a.name}>{a.name}</option>)}
-            </select>
+      <main className="main">
+        <div className="main-head">
+          <h1 className="main-title">{current.label}</h1>
+          <p className="main-sub">{current.sub}</p>
+        </div>
+
+        <div className="main-body" key={section}>
+          {section === "global" && (
+            <section className="card">
+              <h2>Global</h2>
+              <div className="row">
+                <label>Language
+                  <input value={config.language} onChange={(e) => update({ language: e.target.value })} />
+                </label>
+                <label>Time format
+                  <select value={config.timeFormat} onChange={(e) => update({ timeFormat: Number(e.target.value) })}>
+                    <option value={24}>24h</option>
+                    <option value={12}>12h</option>
+                  </select>
+                </label>
+                <label>Units
+                  <select value={config.units} onChange={(e) => update({ units: e.target.value })}>
+                    <option value="metric">metric</option>
+                    <option value="imperial">imperial</option>
+                  </select>
+                </label>
+              </div>
+            </section>
           )}
+
+          {section === "modules" && (
+            <section className="card">
+              <div className="card-head">
+                <h2>Modules ({config.modules.length})</h2>
+                {notAdded.length > 0 && (
+                  <select value="" onChange={(e) => e.target.value && addModule(e.target.value)}>
+                    <option value="">+ Add module…</option>
+                    {notAdded.map((a) => <option key={a.name} value={a.name}>{a.name}</option>)}
+                  </select>
+                )}
+              </div>
+
+              {config.modules.length === 0 ? (
+                <p className="muted">No modules. Add one above.</p>
+              ) : (
+                <>
+                  <div className="tabs" role="tablist" aria-label="Modules">
+                    {config.modules.map((m, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        role="tab"
+                        aria-selected={i === activeIdx}
+                        className={"tab" + (i === activeIdx ? " active" : "")}
+                        onClick={() => setModuleTab(i)}
+                      >
+                        {m.module}
+                      </button>
+                    ))}
+                  </div>
+
+                  <ModuleCard
+                    key={activeIdx}
+                    mod={config.modules[activeIdx]}
+                    ips={ips}
+                    onChange={(x) => updateModule(activeIdx, x)}
+                    onRemove={() => removeModule(activeIdx)}
+                  />
+                </>
+              )}
+            </section>
+          )}
+
+          {section === "store" && <StoreCard onChanged={reloadAfterStore} />}
+
+          {section === "updates" && <UpdatesCard />}
+
+          {section === "security" && <SecurityCard />}
         </div>
 
-        {config.modules.map((m, i) => (
-          <ModuleCard
-            key={i}
-            mod={m}
-            ips={ips}
-            onChange={(x) => updateModule(i, x)}
-            onRemove={() => removeModule(i)}
-          />
-        ))}
-        {config.modules.length === 0 && <p className="muted">No modules. Add one above.</p>}
-      </section>
-
-      <StoreCard onChanged={reloadAfterStore} />
-
-      <UpdatesCard />
-
-      <SecurityCard />
-
-      <footer>
-        <button onClick={save} disabled={saving || !dirty}>
-          {saving ? "Saving…" : "Save"}
-        </button>
-        <span className="foot-status" aria-live="polite">
-          {error ? (
-            <span className="error">{error}</span>
-          ) : status ? (
-            <span className="ok">{status}</span>
-          ) : dirty ? (
-            <span className="pending muted small">Unsaved changes</span>
-          ) : null}
-        </span>
-        <span className="spacer" />
-        <span className="muted small">The mirror reloads automatically on save.</span>
-      </footer>
+        {showFooter && (
+          <footer>
+            <button onClick={save} disabled={saving || !dirty}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <span className="foot-status" aria-live="polite">
+              {error ? (
+                <span className="error">{error}</span>
+              ) : status ? (
+                <span className="ok">{status}</span>
+              ) : dirty ? (
+                <span className="pending muted small">Unsaved changes</span>
+              ) : null}
+            </span>
+            <span className="spacer" />
+            <span className="muted small">The mirror reloads automatically on save.</span>
+          </footer>
+        )}
+      </main>
     </div>
   );
 }
