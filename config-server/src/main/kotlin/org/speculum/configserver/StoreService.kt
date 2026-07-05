@@ -95,6 +95,15 @@ object StoreService {
         try {
             Downloader(dlClient).download(entry.downloadUrl, tmp)
 
+            // Guard against a non-JAR download (e.g. an error/HTML page returned
+            // with a 200). A valid JAR is a ZIP, so it starts with "PK".
+            if (!looksLikeZip(tmp)) {
+                tmp.delete()
+                return@withLock Result.failure(
+                    IllegalStateException("Downloaded file for ${entry.jarName} is not a valid JAR.")
+                )
+            }
+
             entry.sha256?.let { expected ->
                 val actual = SignatureVerifier.sha256(tmp)
                 if (!actual.equals(expected, ignoreCase = true)) {
@@ -137,6 +146,11 @@ object StoreService {
         if (kept.size != config.modules.size) ConfigStore.save(config.copy(modules = kept))
         Result.success(Unit)
     }
+
+    /** True if [file] starts with the ZIP local-file-header magic ("PK"). */
+    private fun looksLikeZip(file: File): Boolean = runCatching {
+        file.inputStream().use { it.read() == 0x50 && it.read() == 0x4B }
+    }.getOrDefault(false)
 
     /** Adds the module to config using its scanned defaultConfig, if not already present. */
     private fun activate(entry: StorePlugin) {

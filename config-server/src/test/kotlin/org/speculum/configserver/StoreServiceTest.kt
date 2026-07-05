@@ -26,6 +26,8 @@ class StoreServiceTest {
         routing {
             get("/catalog.json") { call.respondText(catalogJson, ContentType.Application.Json) }
             get("/example-module.jar") { call.respondBytes(JAR_BYTES) }
+            get("/not-a-jar.jar") { call.respondText("<html>Not Found</html>") } // 200 but not a ZIP
+            // Any other path (e.g. /missing.jar) falls through to Ktor's 404.
         }
     }
     private var port = 0
@@ -50,13 +52,13 @@ class StoreServiceTest {
         dir.deleteRecursively()
     }
 
-    private fun useCatalog(sha256: String? = null) {
+    private fun useCatalog(sha256: String? = null, downloadPath: String = "/example-module.jar") {
         val shaField = sha256?.let { ""","sha256":"$it"""" } ?: ""
         catalogJson = """
           { "version": 1, "plugins": [
             { "id": "example", "name": "Example", "moduleName": "example",
               "jarName": "example-module.jar",
-              "downloadUrl": "http://localhost:$port/example-module.jar"$shaField } ] }
+              "downloadUrl": "http://localhost:$port$downloadPath"$shaField } ] }
         """.trimIndent()
         System.setProperty("mirror.store.catalog", "http://localhost:$port/catalog.json")
     }
@@ -98,6 +100,24 @@ class StoreServiceTest {
         val result = StoreService.install("example")
         assertTrue(result.isFailure)
         // Nothing persisted: no JAR, no config entry.
+        assertFalse(File(ConfigPaths.userPluginsDir(), "example-module.jar").isFile)
+        assertFalse(ConfigStore.load().modules.any { it.module == "example" })
+    }
+
+    @Test
+    fun installRejectsMissingAsset() = runBlocking {
+        useCatalog(downloadPath = "/missing.jar") // server returns 404
+
+        assertTrue(StoreService.install("example").isFailure)
+        assertFalse(File(ConfigPaths.userPluginsDir(), "example-module.jar").isFile)
+        assertFalse(ConfigStore.load().modules.any { it.module == "example" })
+    }
+
+    @Test
+    fun installRejectsNonJarDownload() = runBlocking {
+        useCatalog(downloadPath = "/not-a-jar.jar") // 200 but HTML, not a ZIP
+
+        assertTrue(StoreService.install("example").isFailure)
         assertFalse(File(ConfigPaths.userPluginsDir(), "example-module.jar").isFile)
         assertFalse(ConfigStore.load().modules.any { it.module == "example" })
     }

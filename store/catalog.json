@@ -8,8 +8,9 @@
       "author": "pierrejochem",
       "homepage": "https://github.com/pierrejochem/SpeculumExampleModule",
       "moduleName": "example",
-      "jarName": "example-module.jar",
-      "downloadUrl": "https://github.com/pierrejochem/SpeculumExampleModule/releases/latest/download/example-module.jar"
+      "jarName": "SpeculumExampleModule.jar",
+      "downloadUrl": "https://github.com/pierrejochem/SpeculumExampleModule/releases/download/v1.0.0/SpeculumExampleModule.jar",
+      "sha256": "4deea202f4304f1f44c00e93dbc58f419cdb2c59f637edfa72392c460ac365ac"
     }
   ]
 }

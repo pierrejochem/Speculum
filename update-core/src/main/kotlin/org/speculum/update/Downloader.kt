@@ -7,6 +7,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.contentLength
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.readRemaining
 import kotlinx.io.readByteArray
 import java.io.File
@@ -21,6 +22,11 @@ class Downloader(private val client: HttpClient = downloadClient()) {
     /** Downloads [url] to [dest], reporting (bytesRead, totalBytesOrNull). */
     suspend fun download(url: String, dest: File, onProgress: (Long, Long?) -> Unit = { _, _ -> }) {
         client.prepareGet(url) { header("User-Agent", "Speculum-UpdateNotifier") }.execute { response ->
+            // Reject error responses (e.g. a 404 whose "Not Found" body would
+            // otherwise be saved verbatim as the downloaded file). CIO follows
+            // redirects, so this is the final response's status.
+            if (!response.status.isSuccess())
+                throw IllegalStateException("download failed: HTTP ${response.status}")
             val total = response.contentLength()
             val channel = response.bodyAsChannel()
             var read = 0L
