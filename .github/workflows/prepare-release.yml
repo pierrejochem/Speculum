@@ -85,8 +85,15 @@ jobs:
           # version (the tag must carry this commit — release.yml builds the tag).
           sed -i "s/^speculum\.version=.*/speculum.version=${ver}/" gradle.properties
           git add gradle.properties
-          git commit -m "chore(release): ${NEXT}"
-          git push origin "HEAD:${{ github.ref_name }}"
+          # Idempotent: a prior (failed) run may have already committed this bump.
+          # Only commit/push when something actually changed, so we can still tag
+          # and dispatch when gradle.properties is already at the target version.
+          if git diff --cached --quiet; then
+            echo "gradle.properties already at ${ver}; skipping bump commit."
+          else
+            git commit -m "chore(release): ${NEXT}"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
           git tag -a "$NEXT" -m "Release $NEXT"
           git push origin "$NEXT"
           # A GITHUB_TOKEN tag push does not trigger release.yml's `push` event,
