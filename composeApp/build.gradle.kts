@@ -101,7 +101,7 @@ tasks.matching { it.name == "run" }.configureEach {
 
 // Copy the built module JARs into the package's app-resources so they ship
 // inside the .deb. The packaging tasks depend on this.
-val bundlePlugins by tasks.registering(Copy::class) {
+val bundlePlugins = tasks.register<Copy>("bundlePlugins") {
     dependsOn(":deployModules")
     from(rootProject.layout.projectDirectory.dir("plugins")) { include("*.jar") }
     into(packagedPluginsDir)
@@ -109,7 +109,7 @@ val bundlePlugins by tasks.registering(Copy::class) {
 
 // Bundle the built web admin UI (run `npm run build` in config-server/web first)
 // so the embedded server can serve it from the packaged resources.
-val bundleWeb by tasks.registering(Copy::class) {
+val bundleWeb = tasks.register<Copy>("bundleWeb") {
     from(project(":config-server").projectDir.resolve("web/dist"))
     into(layout.projectDirectory.dir("app-resources/common/web"))
 }
@@ -122,7 +122,7 @@ val bundleWeb by tasks.registering(Copy::class) {
 // Bundle the pinned signing public key (single source: repo-root KEYS) so the
 // in-app updater can verify release signatures (app-side check). The privileged
 // helper uses its own root-owned copy at /opt/speculum/share.
-val bundleSigningKey by tasks.registering(Copy::class) {
+val bundleSigningKey = tasks.register<Copy>("bundleSigningKey") {
     from(rootProject.layout.projectDirectory.file("KEYS"))
     into(layout.projectDirectory.dir("app-resources/common"))
     rename { "speculum-signing-key.asc" }

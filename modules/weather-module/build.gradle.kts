@@ -32,7 +32,7 @@ dependencies {
     compileOnly(libs.ktor.serialization.json)
 }
 
-val deployToModules by tasks.registering(Copy::class) {
+val deployToModules = tasks.register<Copy>("deployToModules") {
     from(tasks.named("jar"))
     into(rootProject.layout.projectDirectory.dir("plugins"))
 }
