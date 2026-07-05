@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, AvailableModule, MirrorConfig, ModuleConfig, REGIONS } from "./api";
 import { ComplimentsEditor } from "./ComplimentsEditor";
 import { SecurityCard } from "./SecurityCard";
+import { StoreCard } from "./StoreCard";
 import { UpdatesCard } from "./UpdatesCard";
 import { Mark } from "./Logo";
 
@@ -15,7 +16,7 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
+  function reload() {
     Promise.all([api.getConfig(), api.getModules(), api.getIps(), api.getVersion()])
       .then(([c, m, ip, v]) => {
         setConfig(c);
@@ -24,7 +25,19 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
         setVersion(v.version);
       })
       .catch((e) => (e.message === "Unauthorized" ? onLogout() : setError(e.message)));
+  }
+
+  useEffect(() => {
+    reload();
   }, []);
+
+  // A store install/uninstall changes config + modules server-side; re-fetch.
+  // Skipped (with a warning) when there are unsaved edits to avoid clobbering them.
+  function reloadAfterStore() {
+    if (dirty && !confirm("Reload will discard your unsaved changes. Continue?")) return;
+    setDirty(false);
+    reload();
+  }
 
   // Warn before the tab is closed/reloaded with unsaved edits.
   useEffect(() => {
@@ -138,6 +151,8 @@ export function ConfigEditor({ onLogout }: { onLogout: () => void }) {
         ))}
         {config.modules.length === 0 && <p className="muted">No modules. Add one above.</p>}
       </section>
+
+      <StoreCard onChanged={reloadAfterStore} />
 
       <UpdatesCard />
 

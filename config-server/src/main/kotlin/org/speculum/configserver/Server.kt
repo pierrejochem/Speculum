@@ -30,6 +30,7 @@ import java.io.File
 @Serializable data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 @Serializable data class Message(val message: String)
 @Serializable data class VersionResponse(val version: String)
+@Serializable data class StoreActionRequest(val id: String)
 
 /**
  * Running version for the admin's read-only display. Injected as
@@ -120,6 +121,28 @@ fun Application.module() {
         get("/api/ips") {
             if (!call.authed()) return@get call.respond(HttpStatusCode.Unauthorized, Message("Unauthorized"))
             call.respond(localIPv4Addresses())
+        }
+
+        // Plugin app store: list catalog entries, download+activate, or remove.
+        get("/api/store") {
+            if (!call.authed()) return@get call.respond(HttpStatusCode.Unauthorized, Message("Unauthorized"))
+            call.respond(StoreService.list())
+        }
+
+        post("/api/store/install") {
+            if (!call.authed()) return@post call.respond(HttpStatusCode.Unauthorized, Message("Unauthorized"))
+            val id = call.receive<StoreActionRequest>().id
+            StoreService.install(id)
+                .onSuccess { call.respond(StoreService.list()) }
+                .onFailure { call.respond(HttpStatusCode.Conflict, Message(it.message ?: "Install failed")) }
+        }
+
+        post("/api/store/uninstall") {
+            if (!call.authed()) return@post call.respond(HttpStatusCode.Unauthorized, Message("Unauthorized"))
+            val id = call.receive<StoreActionRequest>().id
+            StoreService.uninstall(id)
+                .onSuccess { call.respond(StoreService.list()) }
+                .onFailure { call.respond(HttpStatusCode.Conflict, Message(it.message ?: "Uninstall failed")) }
         }
 
         get("/api/config") {

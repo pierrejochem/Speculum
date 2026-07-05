@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "id": "example",
+      "name": "Example Module",
+      "description": "Fully-commented reference module — a starting point for building your own.",
+      "author": "pierrejochem",
+      "homepage": "https://github.com/pierrejochem/SpeculumExampleModule",
+      "moduleName": "example",
+      "jarName": "example-module.jar",
+      "downloadUrl": "https://github.com/pierrejochem/SpeculumExampleModule/releases/latest/download/example-module.jar"
+    }
+  ]
+}

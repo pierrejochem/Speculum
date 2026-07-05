@@ -39,6 +39,22 @@ export interface UpdateProgress {
   targetVersion: string | null;
 }
 
+export interface StorePlugin {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  homepage: string;
+  moduleName: string;
+  installed: boolean;
+  enabled: boolean;
+}
+
+export interface StoreView {
+  plugins: StorePlugin[];
+  reason: string | null;
+}
+
 const TOKEN_KEY = "mm_token";
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -79,6 +95,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
+  getStore: () => req<StoreView>("/api/store"),
+  installPlugin: (id: string) =>
+    req<StoreView>("/api/store/install", { method: "POST", body: JSON.stringify({ id }) }),
+  uninstallPlugin: (id: string) =>
+    req<StoreView>("/api/store/uninstall", { method: "POST", body: JSON.stringify({ id }) }),
 };
 
 export const REGIONS = [

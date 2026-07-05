@@ -342,6 +342,24 @@ The standalone [`pierrejochem/SpeculumExampleModule`](https://github.com/pierrej
 repo is exactly this: a complete, independently buildable example wired up to the
 published API. Clone it as the starting point for an out-of-tree module.
 
+### Publishing to the plugin store
+
+The config UI has a **Plugin store** that installs modules with one click: it
+downloads the JAR into `~/.speculum/plugins/` (a writable folder scanned
+alongside the bundled/dev `plugins/`) and enables the module in `config.json`.
+The store reads `store/catalog.json` from this repo. To list a module:
+
+1. Publish your `*-module.jar` as a **release asset** in your module's own repo
+   (e.g. `…/releases/latest/download/<name>-module.jar`).
+2. Open a PR adding an entry to [`store/catalog.json`](store/catalog.json):
+   `id`, `name`, `description`, `author`, `homepage`, `moduleName` (the
+   `ModuleFactory.name`), `jarName` (the file written to disk), `downloadUrl`,
+   and optionally `sha256` (a lowercase hex digest — the download is verified
+   against it and rejected on mismatch).
+
+A newly installed JAR renders on the mirror after the next restart (plugins are
+scanned once at boot).
+
 ## The reference example
 
 [`SpeculumExampleModule`](https://github.com/pierrejochem/SpeculumExampleModule)
